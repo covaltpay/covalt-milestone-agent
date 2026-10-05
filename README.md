@@ -1,40 +1,48 @@
 # Covalt Autonomous Milestone Coordinator
 
-> An open-source reference agent that turns project briefs and deliverables into rule-bound, non-custodial milestone Pacts using the Covalt Agent Gateway.
+> Autonomous orchestration agent for rule-bound, non-custodial milestone Pacts using the Covalt Agent Gateway.
 
-[![Covalt MCP](https://img.shields.io/badge/MCP-Registry%20Active-teal)](https://github.com/mcp)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+## Agent Execution Wall
 
-## The Problem
-AI agents can generate code, draft scopes, and schedule meetings, but they cannot safely handle payments. Handing an LLM a raw Stripe API key or corporate card invites unlimited blast radius, prompt injection attacks, and unrecoverable fund transfers.
+The agent is an orchestration layer, not a wallet.
 
-## How Covalt Solves This
-This reference agent enforces the **Agent Execution Wall**:
-1. **Proposal, Not Custody:** The agent drafts structured agreements (`Pacts`) with clear milestones, deadlines, and cryptographic intent hashes.
-2. **Deterministic Rail Lock:** The client authorizes the commitment through a secure human-in-the-loop approval link. Funds remain safely on the payment rail (Stripe/GoCardless). Covalt never holds or pools client money.
-3. **Evidence-Gated Release:** Payout instructions execute only when milestone proof (e.g. GitHub PR merged, preview deployed) is recorded on the Trust Timeline and approved.
-
----
+- Never receives card numbers, bank credentials or private payment credentials.
+- Never stores or holds customer funds.
+- Recipient registration comes from the authoritative Covalt API.
+- Pact state, verification, release and settlement remain authoritative in Covalt.
+- Evidence is submitted to Covalt; the agent never decides whether evidence satisfies a condition.
+- Creating a Pact does not mean that money has been paid.
+- Human authorization/funding remains required wherever Covalt requires it.
+- Production mode has no simulated payment fallback.
 
 ## Architecture
 
-```text
-[ Project Brief / Linear Issue ]
-               │
-               ▼
-   [ Milestone Coordinator Agent ]
-   (Claude 3.5 Sonnet / LangChain)
-               │
-               ▼ MCP Tools
-      ┌─────────────────────────┐
-      │  propose_pact           │ ──> Generates SHA-256 Intent Hash
-      │  submit_evidence        │ ──> Appends proof to Trust Timeline
-      │  get_trust_timeline     │ ──> Verifies milestone status
-      └────────────┬────────────┘
-                   │
-                   ▼
-       [ Human Approval Link ]
-       https://covaltpay.com/pact/P10...
-                   │
-                   ▼
-      [ Deterministic Rail Payout ]
+[ Work / Project Brief ] -> [ Covalt Milestone Agent ] -> [ Covalt Pact API / Agent Gateway ] -> [ Verification / Release / Settlement ] -> [ Payment Rails ]
+
+The agent tools are register_recipient, create_pact, send_invitation, submit_milestone_evidence, and get_trust_timeline.
+
+## Work integration
+
+Production service endpoints:
+- GET /health
+- POST /v1/coordinate
+
+Work authenticates server-to-server with AGENT_SHARED_SECRET. The agent uses its own server-side COVALT_API_KEY. Secrets never reach the browser.
+
+The coordinate endpoint accepts a natural-language request plus optional structured Work context and returns the agent response and authoritative Covalt tool results.
+
+## Configuration
+
+Provide ANTHROPIC_API_KEY, ANTHROPIC_MODEL, COVALT_API_KEY, COVALT_BASE_URL, AGENT_SHARED_SECRET and PORT.
+
+## Running
+
+bun install
+bun run build
+bun run start
+
+The CLI remains available with: bun run cli
+
+## Safety
+
+The agent fails closed. If Covalt rejects an operation, the agent reports the authoritative error rather than simulating success or inventing a fallback.
