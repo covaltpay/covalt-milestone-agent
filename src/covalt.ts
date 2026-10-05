@@ -76,6 +76,10 @@ export interface Pact {
   [key: string]: unknown;
 }
 
+export async function createMilestone(input: { name: string; description?: string; conditions?: unknown[] }) {
+  return covaltRequest<Record<string, unknown>>("/milestones", { method: "POST", body: JSON.stringify(input) });
+}
+
 export async function createPact(input: Record<string, unknown>): Promise<Pact> {
   const engagementId = String(input.engagement_id ?? "unknown");
   const sequence = String(input.sequence ?? "unknown");
