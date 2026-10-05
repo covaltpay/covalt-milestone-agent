@@ -53,6 +53,7 @@ export async function registerRecipient(input: {
 }): Promise<Recipient> {
   return covaltRequest<Recipient>("/recipients", {
     method: "POST",
+    headers: { "Idempotency-Key": `agent-recipient:${input.email.trim().toLowerCase()}` },
     body: JSON.stringify(input),
   });
 }
@@ -76,8 +77,11 @@ export interface Pact {
 }
 
 export async function createPact(input: Record<string, unknown>): Promise<Pact> {
+  const engagementId = String(input.engagement_id ?? "unknown");
+  const sequence = String(input.sequence ?? "unknown");
   return covaltRequest<Pact>("/pacts", {
     method: "POST",
+    headers: { "Idempotency-Key": `agent-pact:${engagementId}:${sequence}` },
     body: JSON.stringify(input),
   });
 }
