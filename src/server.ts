@@ -38,10 +38,6 @@ const server = createServer(async (req, res) => {
     for await (const chunk of req) chunks.push(Buffer.from(chunk));
     const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as CoordinateRequest;
 
-    if (!body.message || typeof body.message !== "string") {
-      return send(res, 400, { error: "message is required" });
-    }
-
     if (req.url === "/v1/work/engagements") {
       const result = await createWorkEngagement(body as Parameters<typeof createWorkEngagement>[0]);
       return send(res, 200, result);
